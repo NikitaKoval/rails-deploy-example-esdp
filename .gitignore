@@ -1,9 +1,9 @@
 # Ignore the default SQLite database.
-/example-app/web-app/db/*.sqlite3
-/example-app/web-app/db/*.sqlite3-journal
+/web-app/db/*.sqlite3
+/web-app/db/*.sqlite3-journal
 
 # Ignore all logfiles and tempfiles.
-/example-app/web-app/log/*.log
-/example-app/web-app/tmp
+/web-app/log/*.log
+/web-app/tmp
 
 .idea/
