@@ -96,7 +96,7 @@ Rails.application.configure do
 end
 EOL
 
-cat > ${project_root}/config/database.yml <<EOL
+cat >> ${project_root}/config/database.yml <<EOL
 
 ${instance_name}:
   adapter: mysql2
@@ -136,8 +136,8 @@ WantedBy=multi-user.target
 EOL
 
 echo "# Starting unicorn service"
-systemctl start todo-unicorn-${instance_name}.service
-systemctl enable todo-unicorn-${instance_name}.service
+systemctl start unicorn-${instance_name}.service
+systemctl enable unicorn-${instance_name}.service
 
 echo "# Configuring nginx"
 cat > /etc/nginx/sites-available/${hostname} <<EOL

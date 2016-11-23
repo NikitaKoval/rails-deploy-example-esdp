@@ -19,7 +19,7 @@ project_root=${HOME}/todo-list-app
 instance_name=${1}
 package_name=${2}
 
-systemctl stop gunicorn.service
+systemctl stop unicorn-${instance_name}.service
 echo " # Creating backup"
 version_part=$(cat ${project_root}/VERSION)
 backup_date_part=$(date +"%Y-%m-%d--%H-%M")
@@ -38,10 +38,11 @@ cd ${project_root}
 bundle install
 
 echo " # Configuring app"
+rake db:migrate
 chown -R ${SUDO_USER}:${SUDO_USER} ${project_root}
 
 echo " # Restarting services"
-systemctl start gunicorn.service
+systemctl start unicorn-${instance_name}.service
 systemctl restart nginx.service
 
 echo "# Cleanup"

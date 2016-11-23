@@ -19,3 +19,5 @@ ssh -i ${id_rsa_key_path} ${host} <<EOL
 chmod +x apply-update.sh
 sudo ./apply-update.sh ${instance_name} ${package_name}
 EOL
+
+./create-deployment-package.sh ${BUILD_NUMBER}
