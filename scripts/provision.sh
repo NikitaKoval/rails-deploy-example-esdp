@@ -47,7 +47,7 @@ EOL
 echo "mysql-server mysql-server/root_password password ${mysql_root_password}" | debconf-set-selections
 echo "mysql-server mysql-server/root_password_again password ${mysql_root_password}" | debconf-set-selections
 
-apt-get install -y nginx build-essential mysql-server libmysqlclient-dev
+apt-get install -y nginx build-essential mysql-server libmysqlclient-dev unzip libssl-dev libreadline-dev
 
 echo "# Configuring MySQL"
 mysql -uroot -p${mysql_root_password} -e "create database ${MYSQL_DB_NAME} character set utf8 collate utf8_general_ci;"
@@ -57,13 +57,12 @@ RBENV_ZIP_PATH=${HOME}/rbenv.zip
 RUBY_BUILD_ZIP_PATH=${HOME}/ruby-build.zip
 
 echo "# Installing rbenv & ruby-build"
-wget https://github.com/rbenv/rbenv/archive/master.zip -O ${RBENV_ZIP_PATH}
-wget https://github.com/rbenv/ruby-build/archive/master.zip -O ${RUBY_BUILD_ZIP_PATH}
-
-unzip ${RBENV_ZIP_PATH} -d ${RBENV_PATH}
+git clone https://github.com/rbenv/rbenv.git ${RBENV_PATH}
 cd ${RBENV_PATH} && src/configure && make -C src
+mkdir -p ${RBENV_PATH}/plugins
+git clone https://github.com/rbenv/ruby-build.git ${RBENV_PATH}/plugins/ruby-build
 
-unzip ${RUBY_BUILD_ZIP_PATH} -d ${RBENV_PATH}/plugins/ruby-build
+cd ${HOME}
 
 PATH=${RBENV_BIN_PATH}:${RBENV_SHIMS_PATH}:$PATH
 
@@ -76,7 +75,10 @@ echo "# Installing bundler"
 gem install bundler
 
 echo "# Configuring app"
+mkdir -p ${project_root}
 tar -xzf ${package_name} -C ${project_root}
+cd ${project_root}
+bundle install
 
 cat > ${project_root}/config/environments/${instance_name}.rb <<EOL
 Rails.application.configure do
