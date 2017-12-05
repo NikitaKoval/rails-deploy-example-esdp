@@ -110,7 +110,7 @@ EOL
 
 echo "# Configuring unicorn"
 cat > ${project_root}/config/unicorn-${instance_name}.rb <<EOL
-working_directory "/home/todos"
+working_directory "${project_root}"
 pid "/tmp/unicorn-${instance_name}.pid"
 stderr_path "${project_root}/log/unicorn-${instance_name}.log"
 stdout_path "${project_root}/log/unicorn-${instance_name}.log"

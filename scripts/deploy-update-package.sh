@@ -6,7 +6,7 @@ host=${1}
 id_rsa_key_path=${2}
 instance_name=${3}
 version=${4}
-package_name=todo-${version}.tar.gz
+package_name=todo-list-app-${version}.tar.gz
 package_name_path=${HOME}/artifacts/${package_name}
 
 chmod 700 keys
