@@ -119,7 +119,7 @@ worker_processes 4
 timeout 30
 EOL
 
-cat > /etc/systemd/system/todo-unicorn-${instance_name}.service <<EOL
+cat > /etc/systemd/system/unicorn-${instance_name}.service <<EOL
 [Unit]
 Description=unicorn daemon
 After=network.target

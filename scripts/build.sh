@@ -5,5 +5,6 @@ set -e
 cd web-app
 
 bundle install
+rake db:migrate RAILS_ENV=test
 rake test
-rake cucumber
+bundle exec cucumber

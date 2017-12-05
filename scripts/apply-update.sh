@@ -15,7 +15,7 @@ MYSQL_USER_NAME="todouser"
 
 PATH=${RBENV_BIN_PATH}:${RBENV_SHIMS_PATH}:$PATH
 
-project_root=${HOME}/todo-list-app
+project_root=${HOME}/todo-app
 instance_name=${1}
 package_name=${2}
 
