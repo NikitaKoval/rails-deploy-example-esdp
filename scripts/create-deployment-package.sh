@@ -6,7 +6,7 @@ version=${1}
 
 cd web-app
 
-RAILS_ENV=production rake assets:precompile
+RAILS_ENV=production bundle exec rake assets:precompile
 
 echo ${version} > VERSION
 
