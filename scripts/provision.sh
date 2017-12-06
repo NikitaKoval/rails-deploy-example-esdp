@@ -79,6 +79,7 @@ echo "# Configuring app"
 mkdir -p ${project_root}
 tar -xzf ${package_name} -C ${project_root}
 cd ${project_root}
+rbenv local ${RUBY_VERSION}
 bundle install
 
 cat > ${project_root}/config/environments/${instance_name}.rb <<EOL
