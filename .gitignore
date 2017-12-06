@@ -4,6 +4,8 @@
 
 # Ignore all logfiles and tempfiles.
 /web-app/log/*.log
-/web-app/tmp
+/web-app/tmp/*
+!/web-app/tmp/pids
+!/web-app/tmp/sockets
 
 .idea/
