@@ -13,8 +13,6 @@ RBENV_SHIMS_PATH=${RBENV_PATH}/shims
 MYSQL_DB_NAME="todo_db"
 MYSQL_USER_NAME="todouser"
 
-PATH=${RBENV_BIN_PATH}:${RBENV_SHIMS_PATH}:$PATH
-
 project_root=${HOME}/todo-list-app
 instance_name=${1}
 package_name=${2}
@@ -25,6 +23,7 @@ backup_dir_path=${project_root}_backup_${backup_date_part}_v${version_part}
 
 systemctl stop puma-${instance_name}.service
 su ${SUDO_USER} <<USERCOMMANDS
+PATH=${RBENV_BIN_PATH}:${RBENV_SHIMS_PATH}:$PATH
 echo " # Creating backup"
 mv ${project_root} ${backup_dir_path}
 mysqldump -u${MYSQL_USER_NAME} ${MYSQL_DB_NAME} > ${backup_dir_path}/database_${backup_date_part}_v${version_part}.sql
