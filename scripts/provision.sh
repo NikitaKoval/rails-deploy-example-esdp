@@ -130,11 +130,11 @@ Description=puma daemon
 After=network.target
 
 [Service]
-Environment=RAILS_ENV=demo
+Environment=RAILS_ENV=${instance_name}
 Environment=SECRET_KEY_BASE=${rails_secret}
-User=deploy
-Group=deploy
-WorkingDirectory=/home/deploy/todo-list-app
+User=${SUDO_USER}
+Group=${SUDO_USER}
+WorkingDirectory=${project_root}
 ExecStart=${RBENV_BIN_PATH}/rbenv exec bundle exec puma -C config/puma.rb
 ExecStop=${RBENV_BIN_PATH}/rbenv exec bundle exec pumactl -S tmp/pids/puma.state stop
 [Install]
