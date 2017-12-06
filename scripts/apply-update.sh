@@ -41,7 +41,7 @@ rake db:migrate
 USERCOMMANDS
 
 echo " # Restarting services"
-systemctl start unicorn-${instance_name}.service
+systemctl start puma-${instance_name}.service
 systemctl restart nginx.service
 
 echo "# Cleanup"
