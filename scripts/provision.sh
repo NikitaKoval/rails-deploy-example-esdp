@@ -28,17 +28,7 @@ apt-get update
 apt-get install pwgen
 mysql_root_password=$(pwgen -1 12)
 mysql_user_password=$(pwgen -1 12)
-
-cat > ${HOME}/mysql_passwords.txt <<EOL
-root: ${mysql_root_password}
-${MYSQL_USER_NAME}: ${mysql_user_password}
-EOL
-
-cat > ${HOME}/.my.cnf <<EOL
-[client]
-user=${MYSQL_USER_NAME}
-password=${mysql_user_password}
-EOL
+rails_secret=$(pwgen -1 128)
 
 cat >> /etc/sudoers <<EOL
 ${SUDO_USER} ALL=(ALL:ALL) NOPASSWD:${HOME}/install-update.sh
@@ -47,14 +37,25 @@ EOL
 echo "mysql-server mysql-server/root_password password ${mysql_root_password}" | debconf-set-selections
 echo "mysql-server mysql-server/root_password_again password ${mysql_root_password}" | debconf-set-selections
 
-apt-get install -y nginx build-essential mysql-server libmysqlclient-dev unzip libssl-dev libreadline-dev
+apt-get install -y nginx build-essential mysql-server libmysqlclient-dev unzip libssl-dev libreadline-dev libsqlite3-dev
 
 echo "# Configuring MySQL"
 mysql -uroot -p${mysql_root_password} -e "create database ${MYSQL_DB_NAME} character set utf8 collate utf8_general_ci;"
 mysql -uroot -p${mysql_root_password} -e "create user '${MYSQL_USER_NAME}'@'localhost' identified by '${mysql_user_password}';grant all privileges on ${MYSQL_DB_NAME}.* to '${MYSQL_USER_NAME}'@'localhost';flush privileges;"
 
-RBENV_ZIP_PATH=${HOME}/rbenv.zip
-RUBY_BUILD_ZIP_PATH=${HOME}/ruby-build.zip
+su ${SUDO_USER} <<USERCOMMANDS
+cat > ${HOME}/secrets.txt <<EOL
+mysql root password: ${mysql_root_password}
+mysql user: ${MYSQL_USER_NAME}
+mysql user password: ${mysql_user_password}
+rails secret key base: ${rails_secret}
+EOL
+
+cat > ${HOME}/.my.cnf <<EOL
+[client]
+user=${MYSQL_USER_NAME}
+password=${mysql_user_password}
+EOL
 
 echo "# Installing rbenv & ruby-build"
 git clone https://github.com/rbenv/rbenv.git ${RBENV_PATH}
@@ -110,41 +111,37 @@ ${instance_name}:
   port: 3306
 EOL
 
-echo "# Configuring unicorn"
-cat > ${project_root}/config/unicorn-${instance_name}.rb <<EOL
-working_directory "${project_root}"
-pid "/tmp/unicorn-${instance_name}.pid"
-stderr_path "${project_root}/log/unicorn-${instance_name}.log"
-stdout_path "${project_root}/log/unicorn-${instance_name}.log"
-listen "/tmp/unicorn.${instance_name}.sock"
-worker_processes 4
-timeout 30
+cat >> ${project_root}/config/secrets.yml <<EOL
+${instance_name}:
+  secret_key_base: <%= ENV["SECRET_KEY_BASE"] %>
 EOL
+USERCOMMANDS
 
-cat > /etc/systemd/system/unicorn-${instance_name}.service <<EOL
+cat > /etc/systemd/system/puma-${instance_name}.service <<EOL
 [Unit]
-Description=unicorn daemon
+Description=puma daemon
 After=network.target
 
 [Service]
-Environment="PATH=${RBENV_BIN_PATH}:${RBENV_SHIMS_PATH}:$PATH"
-User=${SUDO_USER}
-Group=www-data
-WorkingDirectory=${project_root}
-ExecStart=bundle exec unicorn -c ${project_root}/config/unicorn-${instance_name}.rb -E ${instance_name} -D
-
+Environment=RAILS_ENV=demo
+Environment=SECRET_KEY_BASE=${rails_secret}
+User=deploy
+Group=deploy
+WorkingDirectory=/home/deploy/todo-list-app
+ExecStart=${RBENV_BIN_PATH}/rbenv exec bundle exec puma -C config/puma.rb
+ExecStop=${RBENV_BIN_PATH}/rbenv exec bundle exec pumactl -S tmp/pids/puma.state stop
 [Install]
 WantedBy=multi-user.target
 EOL
 
-echo "# Starting unicorn service"
-systemctl start unicorn-${instance_name}.service
-systemctl enable unicorn-${instance_name}.service
+echo "# Starting puma service"
+systemctl enable puma-${instance_name}.service
+systemctl start puma-${instance_name}.service
 
 echo "# Configuring nginx"
 cat > /etc/nginx/sites-available/${hostname} <<EOL
-upstream unicorn {
-  server unix:${project_root}/unicorn.${instance_name}.sock fail_timeout=0;
+upstream puma {
+  server unix:${project_root}/tmp/sockets/puma.sock fail_timeout=0;
 }
 
 server {
@@ -164,9 +161,9 @@ server {
         add_header Content-Type text/plain;
     }
 
-    try_files \$uri/index.html \$uri @unicorn;
+    try_files \$uri/index.html \$uri @puma;
     location / {
-        proxy_pass http://@unicorn;
+        proxy_pass http://@puma;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header Host \$http_host;
         proxy_redirect off;
@@ -179,11 +176,11 @@ systemctl restart nginx.service
 
 echo "# Creating archive with configs"
 cd ${project_root}
-tar -czf ${HOME}/todo-${instance_name}-configs.tar.gz config/unicorn-${instance_name}.rb config/environments/${instance_name}.rb config/database.yml
+tar -czf ${HOME}/todo-${instance_name}-configs.tar.gz config/environments/${instance_name}.rb config/database.yml config/secrets.yml
 
 echo -e "${BASH_GREEN_COLOR}#######################################\n\n"
 echo "Please copy archive, extract in project root and commit changes to repo\n\n"
 echo "${HOME}/todo-${instance_name}-configs.tar.gz\n\n"
-echo "Your MySQL passwords stored in this file:\n"
-echo "${HOME}/mysql_passwords.txt\n\n"
+echo "Your MySQL passwords and rails secret stored in this file:\n"
+echo "${HOME}/secret.txt\n\n"
 echo -e "#######################################${BASH_RESET_COLOR}"
