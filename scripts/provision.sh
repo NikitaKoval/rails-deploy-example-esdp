@@ -31,7 +31,7 @@ mysql_user_password=$(pwgen -1 12)
 rails_secret=$(pwgen -1 128)
 
 cat >> /etc/sudoers <<EOL
-${SUDO_USER} ALL=(ALL:ALL) NOPASSWD:${HOME}/install-update.sh
+${SUDO_USER} ALL=(ALL:ALL) NOPASSWD:${HOME}/apply-update.sh
 EOL
 
 echo "mysql-server mysql-server/root_password password ${mysql_root_password}" | debconf-set-selections
@@ -116,6 +116,12 @@ cat >> ${project_root}/config/secrets.yml <<EOL
 ${instance_name}:
   secret_key_base: <%= ENV["SECRET_KEY_BASE"] %>
 EOL
+
+RAILS_ENV=${instance_name} SECRET_KEY_BASE=${rails_secret} bundle exec rake db:migrate
+
+echo "# Creating archive with configs"
+cd ${project_root}
+tar -czf ${HOME}/todo-${instance_name}-configs.tar.gz config/environments/${instance_name}.rb config/database.yml config/secrets.yml
 USERCOMMANDS
 
 cat > /etc/systemd/system/puma-${instance_name}.service <<EOL
@@ -149,7 +155,7 @@ server {
     listen 80;
     server_name ${hostname};
 
-    root ${project_root};
+    root ${project_root}/public;
 
     location ^~ /assets/ {
     gzip_static on;
@@ -175,13 +181,13 @@ EOL
 ln -s /etc/nginx/sites-available/${hostname} /etc/nginx/sites-enabled
 systemctl restart nginx.service
 
-echo "# Creating archive with configs"
-cd ${project_root}
-tar -czf ${HOME}/todo-${instance_name}-configs.tar.gz config/environments/${instance_name}.rb config/database.yml config/secrets.yml
+cat <<EOL
+$(echo -e "${BASH_GREEN_COLOR}#######################################")
 
-echo -e "${BASH_GREEN_COLOR}#######################################\n\n"
-echo "Please copy archive, extract in project root and commit changes to repo\n\n"
-echo "${HOME}/todo-${instance_name}-configs.tar.gz\n\n"
-echo "Your MySQL passwords and rails secret stored in this file:\n"
-echo "${HOME}/secret.txt\n\n"
-echo -e "#######################################${BASH_RESET_COLOR}"
+Please copy archive, extract in project root and commit changes to repo"
+${HOME}/todo-${instance_name}-configs.tar.gz"
+Your MySQL passwords and rails secret stored in this file:"
+${HOME}/secret.txt\n\n"
+
+$(echo -e "#######################################${BASH_RESET_COLOR}")
+EOL

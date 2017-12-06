@@ -15,19 +15,19 @@ MYSQL_USER_NAME="todouser"
 
 PATH=${RBENV_BIN_PATH}:${RBENV_SHIMS_PATH}:$PATH
 
-project_root=${HOME}/todo-app
+project_root=${HOME}/todo-list-app
 instance_name=${1}
 package_name=${2}
 
-systemctl stop unicorn-${instance_name}.service
-echo " # Creating backup"
 version_part=$(cat ${project_root}/VERSION)
 backup_date_part=$(date +"%Y-%m-%d--%H-%M")
 backup_dir_path=${project_root}_backup_${backup_date_part}_v${version_part}
 
+systemctl stop puma-${instance_name}.service
+su ${SUDO_USER} <<USERCOMMANDS
+echo " # Creating backup"
 mv ${project_root} ${backup_dir_path}
 mysqldump -u${MYSQL_USER_NAME} ${MYSQL_DB_NAME} > ${backup_dir_path}/database_${backup_date_part}_v${version_part}.sql
-chown -R ${SUDO_USER}:${SUDO_USER} ${backup_dir_path}
 
 echo " # Extracting app package"
 mkdir ${project_root}
@@ -39,7 +39,7 @@ bundle install
 
 echo " # Configuring app"
 rake db:migrate
-chown -R ${SUDO_USER}:${SUDO_USER} ${project_root}
+USERCOMMANDS
 
 echo " # Restarting services"
 systemctl start unicorn-${instance_name}.service
